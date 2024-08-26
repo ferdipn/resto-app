@@ -18,8 +18,9 @@ class Table extends Component
     public $filterByDate = '';
     private $isOpenModal = false;
     private $formatDate = '';
+    private $formatTime = '';
     
-    protected $listeners = ['searchUpdated'];
+    protected $listeners = ['searchUpdated', 'itemSaved' => 'render'];
     protected $paginationTheme = 'tailwind';
 
     protected $queryString = ['search'];
@@ -44,35 +45,43 @@ class Table extends Component
     {
         $this->resetPage();
     }
+
     public function updatingFilterByDate($value)
     {
         if ($value !== '') {
             $formatDate = Carbon::parse($value)->format('N');
+            $formatTime = Carbon::parse($value)->format('H:i:s');
     
             $this->formatDate = $formatDate;
+            $this->formatTime = $formatTime;
         }
         $this->resetPage();
     }
 
     public function render()
     {
-        $restaurants = Restaurant::with('operationHours')
-            ->where('name', 'like', '%'.$this->search.'%');
+        $restaurants = Restaurant::with('operationHours');
+        
+        if ($this->search) {
+            $restaurants->whereRaw("LOWER(name) LIKE ?", "%".trim(strtolower($this->search))."%");
+        }
 
         if ($this->filterByDate) {
             $selectedDate = $this->formatDate;
-            $restaurants->whereHas('operationHours', function($q) use ($selectedDate) {
+            $selectedtime = $this->formatTime;
+            $restaurants->whereHas('operationHours', function($q) use ($selectedDate, $selectedtime) {
                 $q->where('day', $selectedDate)
-                ->where('is_open', true);
+                    ->whereTime('open', '<=', $selectedtime)
+                    ->whereTime('close', '>=', $selectedtime)
+                    ->where('is_open', true);
             });
         }
         $restaurants = $restaurants->paginate(10);
         
-
-        $hoursString = "";
-        $latestDataArray = [];
-
         foreach ($restaurants as $indexResto => $restaurant) {
+            $hoursString = "";
+            $latestDataArray = [];
+
             foreach ($restaurant->operationHours as $i => $operationHour) {
                 $latestData = end($latestDataArray);
                 
@@ -120,7 +129,7 @@ class Table extends Component
             foreach ($latestDataArray as $index => $latestA) {
 
                 if ($index > 0) {
-                    $stringDay .= " / ";
+                    $stringDay .= "\n/ ";
                 }
                 $newString = "{$latestA['label'][0]}";
                 if (count($latestA['day']) > 1) {
@@ -143,7 +152,6 @@ class Table extends Component
             'data' => $restaurants
         ]);
     }
-
 
     private function getDayName($day)
     {

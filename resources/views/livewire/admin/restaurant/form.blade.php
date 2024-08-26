@@ -19,6 +19,8 @@
                         placeholder="Bro Burger" 
                         required
                         wire:model="name" />
+
+                    @error('name') <span class="invalid-feedback">{{ $message }}<span> @enderror
                 </div>
                 <div class="mb-5">
                     <label for="address" 
@@ -29,6 +31,8 @@
                         required 
                         placeholder="jl. Jayu Jati no 14, Kec. Rawa sari" 
                         wire:model="address"></textarea>
+
+                    @error('address') <span class="invalid-feedback">{{ $message }}<span> @enderror
                 </div>
 
                 <div class="mb-5">
@@ -57,6 +61,7 @@
                                     class="border border-gray-300 text-sm rounded-lg focus:ring-blue-500 block p-2.5" 
                                     type="time" 
                                     placeholder="jam tutup"
+                                    min="{{ $operationHour['open']}}"
                                     wire:model="operationHours.{{ $day }}.close"
                                     @if(!$operationHour['is_open']) disabled @endif
                                 >

@@ -15,6 +15,6 @@ class Restaurant extends Model
 
     public function operationHours()
     {
-        return $this->hasMany(RestaurantOperationHour::class)->where('is_open', true);
+        return $this->hasMany(RestaurantOperationHour::class)->where('is_open', true)->orderBy('day');
     }
 }
